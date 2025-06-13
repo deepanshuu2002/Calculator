@@ -7,7 +7,6 @@ public class Main {
 
 //        String s = "//|1\n1|2|3";
         String s = "//sep123sep222sep";
-//        String s = "\n\n\n\n1";
 
         int n = s.length();
 
@@ -26,8 +25,6 @@ public class Main {
         //delimiter
 
         else if(s.charAt(0) == '/' && s.charAt(1) =='/'){
-            //checkpoint
-            System.out.println("safe");
 
             StringBuilder delimiter = new StringBuilder();
             StringBuilder chkDelimiter = new StringBuilder();
@@ -39,12 +36,7 @@ public class Main {
                 else break;
             }
 
-            //checkpoint
-            System.out.println(delimiter);
-            System.out.println("i " + i);
-
             while(i<n && s.charAt(i) == '\n') i++;
-
 
             while(i<n){
                 while(i<n && (((int)s.charAt(i) >= 48 && (int)s.charAt(i) <= 57) || s.charAt(i) == '.')){
@@ -52,9 +44,6 @@ public class Main {
                     i++;
                 }
 
-
-                //checkpoint
-                System.out.println(temp);
 
                 while(i<n && s.charAt(i) == '\n') i++;
                 if(temp.length()>0){
@@ -74,7 +63,6 @@ public class Main {
                     chkDelimiter = new StringBuilder();
                 }
             }
-
 
 
         }
