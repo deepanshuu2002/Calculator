@@ -6,79 +6,104 @@ import java.util.List;
 public class Calculator {
 
     public static String calculate(String s) {
-        if (s.isEmpty()) return "0";
+        if (s.isEmpty()) {
+            return "0";
+        }
 
+        // 1) Extract optional custom delimiter
         String delimiter = ",";
         int startIndex = 0;
-
-        // Check for custom delimiter
         if (s.startsWith("//")) {
-            int newlineIndex = s.indexOf('\n');
-            if (newlineIndex == -1) return "Invalid delimiter format";
-
-            delimiter = s.substring(2, newlineIndex);
-            startIndex = newlineIndex + 1;
+            int nl = s.indexOf('\n');
+            if (nl == -1) {
+                return "Invalid delimiter format";
+            }
+            delimiter   = s.substring(2, nl);
+            startIndex  = nl + 1;
         }
 
-        List<String> numbers = new ArrayList<>();
-        StringBuilder currentNumber = new StringBuilder();
+        List<String> errors  = new ArrayList<>();
+        List<Double> numbers = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean lastWasSep = false;
 
-        boolean lastWasDelimiter = false;
-        for (int i = startIndex; i < s.length(); i++) {
-            char c = s.charAt(i);
+        int i = startIndex;
+        while (i < s.length()) {
 
-            if (c == '\n' || s.startsWith(delimiter, i)) {
-
-                if (lastWasDelimiter) {
-                    if (c == '\n') {
-                        return "Number expected but '\\n' found at position " + i + ".";
-                    } else {
-                        return "Number expected but '" + delimiter + "' found at position " + i + ".";
-                    }
+            // full‐delimiter match?
+            if (!delimiter.isEmpty() && s.startsWith(delimiter, i)) {
+                if (lastWasSep) {
+                    errors.add("Number expected but '" + delimiter +
+                            "' found at position " + i + ".");
                 }
+                finishToken(current, errors, numbers);
+                current.setLength(0);
+                i += delimiter.length();
+                lastWasSep = true;
 
-                if (currentNumber.length() > 0) {
-                    numbers.add(currentNumber.toString());
-                    currentNumber.setLength(0);
-                } else if (c == '\n') {
-                    return "Number expected but '\\n' found at position " + i + ".";
+                // newline
+            } else if (s.charAt(i) == '\n') {
+                if (lastWasSep) {
+                    errors.add("Number expected but '\\n' found at position " + i + ".");
                 }
+                finishToken(current, errors, numbers);
+                current.setLength(0);
+                i++;
+                lastWasSep = true;
 
-                if (s.startsWith(delimiter, i)) {
-                    i += delimiter.length() - 1;
-                }
-                lastWasDelimiter = true;
-            } else if (Character.isDigit(c) || c == '-' || c == '.') {
-                currentNumber.append(c);
-                lastWasDelimiter = false;
+                // digit, minus or dot → accumulate a number token
+            } else if (Character.isDigit(s.charAt(i)) ||
+                    s.charAt(i) == '-' ||
+                    s.charAt(i) == '.') {
+                current.append(s.charAt(i));
+                i++;
+                lastWasSep = false;
+
+                // anything else is an unexpected‐char error
             } else {
-                return "'" + delimiter + "' expected but '" + c + "' found at position " + i + ".";
+                finishToken(current, errors, numbers);
+                current.setLength(0);
+                errors.add("'" + delimiter +
+                        "' expected but '" + s.charAt(i) +
+                        "' found at position " + i + ".");
+                i++;
+                lastWasSep = false;
             }
         }
 
-        if (lastWasDelimiter) {
-            return "Number expected but EOF found.";
-        }
-        if (currentNumber.length() > 0) {
-            numbers.add(currentNumber.toString());
-        }
-
-        // Check for negatives
-        List<String> negatives = new ArrayList<>();
-        double sum = 0.0;
-        for (String numStr : numbers) {
-            if (!numStr.isEmpty()) {
-                double num = Double.parseDouble(numStr);
-                if (num < 0) negatives.add(numStr);
-                sum += num;
-            }
+        // ended on a separator → EOF error; otherwise flush last token
+        if (lastWasSep) {
+            errors.add("Number expected but EOF found.");
+        } else {
+            finishToken(current, errors, numbers);
         }
 
-        if (!negatives.isEmpty()) {
-            return "Negative not allowed : " + String.join(", ", negatives);
+        // if any errors, return them in the exact order
+        if (!errors.isEmpty()) {
+            return String.join("\n", errors);
         }
 
-        String ans = String.format("%.10f", sum).replaceAll("0+$", "").replaceAll("\\.$", "");
-        return ans;
+        // otherwise sum and format without trailing zeros
+        double sum = 0;
+        for (double d : numbers) {
+            sum += d;
+        }
+        String formatted = String.format("%.10f", sum)
+                .replaceAll("0+$", "")
+                .replaceAll("\\.$", "");
+        return formatted;
+    }
+
+    // Flushes the current token: reports negative‐number or collects positive
+    private static void finishToken(StringBuilder cur,
+                                    List<String> errors,
+                                    List<Double> numbers) {
+        if (cur.length() == 0) return;
+        String tok = cur.toString();
+        if (tok.startsWith("-")) {
+            errors.add("Negative not allowed : " + tok);
+        } else {
+            numbers.add(Double.parseDouble(tok));
+        }
     }
 }
