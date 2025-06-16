@@ -23,7 +23,7 @@ public class CalculatorTest {
 
     @Test
     public void testSimpleCommaAtEnd() {
-        assertEquals("invalid input: error", Calculator.calculate("1,2,3,"));
+        assertEquals("Number expected but EOF found.", Calculator.calculate("1,2,3,"));
     }
 
     @Test
@@ -38,12 +38,12 @@ public class CalculatorTest {
 
     @Test
     public void testInvalidInputDoubleComma() {
-        assertEquals("invalid input: error", Calculator.calculate("1,,2"));
+        assertEquals("Number expected but ',' found at position 2.", Calculator.calculate("1,,2"));
     }
 
     @Test
     public void testInvalidCustomDelimiterMismatch() {
-        assertEquals("invalid input: error", Calculator.calculate("//sep\n1sep2sepX"));
+        assertEquals("'sep' expected but 'X' found at position 14.", Calculator.calculate("//sep\n1sep2sepX"));
     }
 
     @Test

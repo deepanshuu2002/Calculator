@@ -1,103 +1,83 @@
 package org.example;
 
-import java.util.Stack;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Calculator {
 
     public static String calculate(String s) {
-        int n = s.length();
+        if (s.isEmpty()) return "0";
 
-        Stack<String> stack = new Stack<>();
-        StringBuilder temp = new StringBuilder();
+        String delimiter = ",";
+        int startIndex = 0;
 
-        boolean flag = false;
+        // Check for custom delimiter
+        if (s.startsWith("//")) {
+            int newlineIndex = s.indexOf('\n');
+            if (newlineIndex == -1) return "Invalid delimiter format";
 
-        if (n == 0) {
-            stack.push("0");
-        } else if (n == 1 && Character.isDigit(s.charAt(0))) {
-            temp.append(s.charAt(0));
-        } else if (s.startsWith("//")) {
-            StringBuilder delimiter = new StringBuilder();
-            StringBuilder chkDelimiter = new StringBuilder();
-            int i = 2;
-            for (; i < n; i++) {
-                if (s.charAt(i) != '\n' && !Character.isDigit(s.charAt(i))) {
-                    delimiter.append(s.charAt(i));
-                } else break;
-            }
-            while (i < n && s.charAt(i) == '\n') i++;
+            delimiter = s.substring(2, newlineIndex);
+            startIndex = newlineIndex + 1;
+        }
 
-            while (i < n) {
-                while (i < n && (Character.isDigit(s.charAt(i)) || s.charAt(i) == '.')) {
-                    temp.append(s.charAt(i));
-                    i++;
-                }
+        List<String> numbers = new ArrayList<>();
+        StringBuilder currentNumber = new StringBuilder();
 
-                while (i < n && s.charAt(i) == '\n') i++;
-                if (temp.length() > 0) {
-                    stack.push(temp.toString());
-                    temp = new StringBuilder();
-                }
+        boolean lastWasDelimiter = false;
+        for (int i = startIndex; i < s.length(); i++) {
+            char c = s.charAt(i);
 
-                while (i < n && s.charAt(i) != '\n' && !Character.isDigit(s.charAt(i))) {
-                    chkDelimiter.append(s.charAt(i));
-                    i++;
-                }
-                if (chkDelimiter.length() > 0 && !chkDelimiter.toString().equals(delimiter.toString())) {
-                    flag = true;
-                    break;
-                } else {
-                    chkDelimiter = new StringBuilder();
-                }
-            }
+            if (c == '\n' || s.startsWith(delimiter, i)) {
 
-        } else {
-            for (int i = 0; i < n; i++) {
-                if (temp.length() > 0 && !Character.isDigit(s.charAt(i)) && s.charAt(i) != '.') {
-                    stack.push(temp.toString());
-                    temp = new StringBuilder();
-                }
-
-                if (n >= 2) {
-                    if (s.charAt(i) == '\n') {
-                        if (temp.length() > 0) {
-                            stack.push(temp.toString());
-                            temp = new StringBuilder();
-                        }
-                        continue;
-                    } else if (i == n - 1 && s.charAt(i) == ',') {
-                        flag = true;
-                        break;
-                    } else if (i < n - 1 && s.charAt(i) == ',' && (s.charAt(i + 1) == ',' || s.charAt(i + 1) == '\n')) {
-                        flag = true;
-                        break;
-                    } else if (s.charAt(i) == ',') {
-                        if (temp.length() > 0) {
-                            stack.push(temp.toString());
-                            temp = new StringBuilder();
-                        }
-                    } else if (Character.isDigit(s.charAt(i)) || s.charAt(i) == '.') {
-                        temp.append(s.charAt(i));
+                if (lastWasDelimiter) {
+                    if (c == '\n') {
+                        return "Number expected but '\\n' found at position " + i + ".";
                     } else {
-                        flag = true;
-                        break;
+                        return "Number expected but '" + delimiter + "' found at position " + i + ".";
                     }
                 }
+
+                if (currentNumber.length() > 0) {
+                    numbers.add(currentNumber.toString());
+                    currentNumber.setLength(0);
+                } else if (c == '\n') {
+                    return "Number expected but '\\n' found at position " + i + ".";
+                }
+
+                if (s.startsWith(delimiter, i)) {
+                    i += delimiter.length() - 1;
+                }
+                lastWasDelimiter = true;
+            } else if (Character.isDigit(c) || c == '-' || c == '.') {
+                currentNumber.append(c);
+                lastWasDelimiter = false;
+            } else {
+                return "'" + delimiter + "' expected but '" + c + "' found at position " + i + ".";
             }
         }
 
-        if (flag) return "invalid input: error";
-
-        if (temp.length() > 0) {
-            stack.push(temp.toString());
+        if (lastWasDelimiter) {
+            return "Number expected but EOF found.";
+        }
+        if (currentNumber.length() > 0) {
+            numbers.add(currentNumber.toString());
         }
 
+        // Check for negatives
+        List<String> negatives = new ArrayList<>();
         double sum = 0.0;
-        for (String str : stack) {
-            sum += Double.parseDouble(str);
+        for (String numStr : numbers) {
+            if (!numStr.isEmpty()) {
+                double num = Double.parseDouble(numStr);
+                if (num < 0) negatives.add(numStr);
+                sum += num;
+            }
         }
 
-        // ✅ Format output nicely
+        if (!negatives.isEmpty()) {
+            return "Negative not allowed : " + String.join(", ", negatives);
+        }
+
         String ans = String.format("%.10f", sum).replaceAll("0+$", "").replaceAll("\\.$", "");
         return ans;
     }
